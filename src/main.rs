@@ -1,3 +1,5 @@
+use core::panic;
+
 #[derive(Debug)]
 enum TcpState {
     Closed,
@@ -75,7 +77,45 @@ struct PseudoTcpClient {
     peer_seq: u32,
 }
 
+impl PseudoTcpClient {
+    fn new(port: u16) -> Self {
+        Self {
+            port,
+            state: TcpState::Closed,
+            seq: 1000,
+            ack: 0,
+            peer_seq: 0,
+        }
+    }
+
+    fn send_syn(&mut self, to: u16) -> TcpSegment {
+        self.state = TcpState::SynSent;
+        TcpSegment::syn(self.port, to, self.seq)
+    }
+
+    fn receive(&mut self, seg: &TcpSegment) -> Option<TcpSegment> {
+        match self.state {
+            TcpState::Closed => {
+                panic!()
+            }
+            TcpState::SynSent => {
+                panic!()
+            }
+            TcpState::SynReceived => {
+                panic!()
+            }
+            TcpState::Established => {
+                panic!()
+            }
+        }
+    }
+
+    fn send_data(&mut self, to: u16, msg: &str) -> TcpSegment {
+        self.seq += msg.len() as u32;
+        TcpSegment::data(self.port, to, self.seq, self.ack, msg.as_bytes().to_vec())
+    }
+}
+
 fn main() {
     println!("Hello, world!");
 }
-
