@@ -158,5 +158,36 @@ impl TcpClient {
 }
 
 fn main() {
-    println!("Hello, world!");
+    let mut client_a = TcpClient::new(1000);
+    let mut client_b = TcpClient::new(2000);
+
+    // Step 1: A sends SYN to B
+    let syn = client_a.send_syn(client_b.port);
+    println!("[A -> B] SYN: {:?}", syn);
+
+    // Step 2: B receives SYN and responds with SYN-ACK
+    let syn_ack = client_b.receive(&syn).unwrap();
+    println!("[B -> A] SYN-ACK: {:?}", syn_ack);
+
+    // Step 3: A receives SYN-ACK and responds with ACK
+    let ack = client_a.receive(&syn_ack).unwrap();
+    println!("[A -> B] ACK: {:?}", ack);
+
+    // Step 4: B receives ACK
+    client_b.receive(&ack);
+
+    // Now both are Established
+    assert!(matches!(client_a.state, TcpState::Established));
+    assert!(matches!(client_b.state, TcpState::Established));
+
+    println!("Connection established!\n");
+
+    // Exchange data
+    let msg = client_a.send_data(client_b.port, "hello from A");
+    println!("[A -> B] Data: {:?}", msg);
+    client_b.receive(&msg);
+
+    let reply = client_b.send_data(client_a.port, "hi from B");
+    println!("[B -> A] Data: {:?}", reply);
+    client_a.receive(&reply);
 }
