@@ -69,7 +69,7 @@ impl TcpSegment {
     }
 }
 
-struct PseudoTcpClient {
+struct TcpClient {
     port: u16,
     state: TcpState,
     seq: u32,
@@ -77,7 +77,7 @@ struct PseudoTcpClient {
     peer_seq: u32,
 }
 
-impl PseudoTcpClient {
+impl TcpClient {
     fn new(port: u16) -> Self {
         Self {
             port,
@@ -96,16 +96,57 @@ impl PseudoTcpClient {
     fn receive(&mut self, seg: &TcpSegment) -> Option<TcpSegment> {
         match self.state {
             TcpState::Closed => {
-                panic!()
+                if seg.syn && !seg.ack_flag {
+                    // Received SYN → respond with SYN-ACK
+                    self.state = TcpState::SynReceived;
+                    self.peer_seq = seg.seq;
+                    self.ack = seg.seq + 1;
+                    Some(TcpSegment::syn_ack(
+                        self.port,
+                        seg.src_port,
+                        self.seq,
+                        self.ack,
+                    ))
+                } else {
+                    None
+                }
             }
             TcpState::SynSent => {
-                panic!()
+                if seg.syn && seg.ack_flag {
+                    // Received SYN-ACK → send ACK
+                    self.peer_seq = seg.seq;
+                    self.ack = seg.seq + 1;
+                    self.state = TcpState::Established;
+                    Some(TcpSegment::ack(
+                        self.port,
+                        seg.src_port,
+                        self.seq + 1,
+                        self.ack,
+                    ))
+                } else {
+                    None
+                }
             }
             TcpState::SynReceived => {
-                panic!()
+                if seg.ack_flag && !seg.syn {
+                    // Final ACK in 3-way handshake
+                    self.state = TcpState::Established;
+                    None
+                } else {
+                    None
+                }
             }
             TcpState::Established => {
-                panic!()
+                if !seg.payload.is_empty() {
+                    println!(
+                        "Client {} received data: {:?}",
+                        self.port,
+                        String::from_utf8_lossy(&seg.payload)
+                    );
+                    None
+                } else {
+                    None
+                }
             }
         }
     }
