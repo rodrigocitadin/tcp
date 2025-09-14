@@ -238,7 +238,7 @@ fn simulate_handshake_with_timeout() {
         let syn = syn.with_checksum(src_ip, dst_ip);
 
         if let Some(syn_ack) = client_b.receive(&syn) {
-            println!("✔️  SYN-ACK received");
+            println!("SYN-ACK received");
             let ack = client_a.receive(&syn_ack).unwrap();
             client_b.receive(&ack);
             handshake_done = true;
